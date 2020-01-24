@@ -1,0 +1,222 @@
+esphome:
+  name: neopixel
+  platform: ESP8266
+  board: nodemcu
+wifi:
+  ssid: "************"
+  password: "********"
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: "**************"
+  
+  services:
+    - service: rotary_1
+      variables:
+        level: float
+      then:
+        - sensor.rotary_encoder.set_value:
+            id: rotary_1
+            value: !lambda 'return level;'
+            
+    - service: rotary_2
+      variables:
+        level: float
+      then:
+        - sensor.rotary_encoder.set_value:
+            id: rotary_2
+            value: !lambda 'return level;'
+
+
+ota:
+  password: "**************"
+
+
+dallas:
+  - pin: GPIO1
+  
+
+light:
+  - platform: fastled_clockless
+    chipset: WS2812B
+    id: neo_1
+    rgb_order: GRB
+    pin: GPIO3
+    num_leds: 30
+    default_transition_length: 10ms
+    effects:
+      - random:
+      - addressable_rainbow:
+      - addressable_twinkle:
+    name: "NeoPixel Light"
+    
+  - platform: fastled_clockless
+    chipset: WS2812B
+    id: neo_2
+    rgb_order: GRB
+    pin: GPIO15
+    num_leds: 30
+    default_transition_length: 10ms
+    effects:
+      - random:
+      - addressable_rainbow:
+      - addressable_twinkle:
+    name: "NeoPixel Light 2"
+    
+sensor:
+  - platform: rotary_encoder
+    name: "Rotary Encoder"
+    id: rotary_1
+    pin_a: D6
+    pin_b: D7
+#    pin_reset:
+#      number: D5
+#      inverted: True
+#      mode: INPUT_PULLUP
+    resolution: "4"
+    min_value: 6
+    max_value: 50
+    on_value:
+      then:
+        - light.turn_on:
+            id: neo_2
+            brightness: !lambda |-
+              return id(rotary_1).state/100 * 2;
+    
+  - platform: rotary_encoder
+    name: "Rotary Encoder 2"
+    id: rotary_2
+    pin_a: D2
+    pin_b: D1
+#    pin_reset:
+#      number: D3
+#      inverted: True
+#      mode: INPUT_PULLUP
+    resolution: "4"
+    min_value: 6
+    max_value: 50
+    on_value:
+      then:
+        - light.turn_on:
+            id: neo_1
+            brightness: !lambda |-
+              return id(rotary_2).state/100 * 2;
+    
+    
+  - platform: dallas
+    address: 0xCB0118325519FF28
+    name: "Interni teplota"
+
+    
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: D5
+      mode: "INPUT_PULLUP"
+      inverted: True
+    name: "Encoder button"
+    on_multi_click:
+    - timing:
+      - ON for at most 1s
+      - OFF for at most 1s
+      - ON for at most 1s
+      - OFF for at least 0.2s
+      then:
+        - logger.log: "Double klik, zmena efect modu"
+        - homeassistant.service:
+            service: input_select.select_next
+            data:
+              entity_id: "input_select.neopixel_light_2"
+      
+    - timing:
+      - ON for 1s to 3s
+      - OFF for at least 0.5s
+      then:
+        - logger.log: "Dlouhy klik, trigger hlavniho svetla"
+        - homeassistant.service:
+            service: 'switch.toggle'
+            data:
+              entity_id: 'switch.0x00158d00033fe900_switch'
+    - timing:
+      - ON for at most 1s
+      - OFF for at least 500ms
+      then:
+        if:
+          condition:
+            light.is_on: neo_2
+          then:
+            - logger.log: "Vypinam NEOpixel"
+            - light.turn_off:
+                id: neo_2
+            - sensor.rotary_encoder.set_value:
+                id: rotary_1
+                value: 0
+                
+          else:
+            - logger.log: "Zapinam NEOpixel"
+            - light.turn_on:
+                id: neo_2
+                transition_length: 1ms
+                brightness: 12%
+            - sensor.rotary_encoder.set_value:
+                id: rotary_1
+                value: 6
+
+
+
+
+
+  - platform: gpio
+    pin:
+      number: D3
+      mode: "INPUT_PULLUP"
+      inverted: True
+    name: "Encoder button 2"
+    on_multi_click:
+    - timing:
+      - ON for at most 1s
+      - OFF for at least 50ms
+      then:
+        if:
+          condition:
+            light.is_on: neo_1
+          then:
+            - logger.log: "Vypinam NEOpixel"
+            - light.turn_off:
+                id: neo_1
+            - sensor.rotary_encoder.set_value:
+                id: rotary_2
+                value: 0
+                
+          else:
+            - light.turn_on:
+                id: neo_1
+                transition_length: 1ms
+                brightness: 12%
+            - sensor.rotary_encoder.set_value:
+                id: rotary_2
+                value: 6
+    - timing:
+      - ON for 1s to 3s
+      - OFF for at least 0.5s
+      then:
+        - logger.log: "Dlouhy klik, trigger hlavniho svetla"
+        - homeassistant.service:
+            service: 'switch.toggle'
+            data:
+              entity_id: 'switch.0x00158d00033fe900_switch'
+
+
+
+
+
+
+
+        
+
+
+    
