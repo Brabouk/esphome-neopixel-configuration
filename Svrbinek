@@ -38,7 +38,7 @@ binary_sensor:
       inverted: True
     name: Tlacitko
     id: tl_1
-    on_press:  // po stisknuti tlacitka smenis stav rele
+    on_press:  // po stisknuti tlacitka zmenis stav rele
       then:
         - switch.toggle: relay_1  // zde pouzivas id rele (senzoru)
 
