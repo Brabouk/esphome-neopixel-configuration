@@ -1,0 +1,39 @@
+esphome:
+  name: test
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: "oasd"
+  password: "46as4556456d26"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Test Fallback Hotspot"
+    password: "Qqgchxt9ptLf"
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: D4
+      mode: "INPUT_PULLUP"
+      inverted: True
+    name: Tlacitko
+    id: tl_1
+    on_press:
+      - logger.log: "zmena stavu svetla"
+      - homeassistant.service:
+            service: light.toggle
+            data:
+              entity_id: "light.kitchen_lights"
+
