@@ -22,6 +22,14 @@ api:
 
 ota:
 
+switch:
+  - platform: gpio
+    pin: D2  // pin na kterem mas pripojene rele
+    name: rele  // nazev senzoru ktery vidis v home assistentovi
+    id: relay_1  // nazev senzoru, ktery se pouziva uvnitr toho programu, aby jsi s nim mohl provadet akce
+
+
+
 binary_sensor:
   - platform: gpio
     pin:
@@ -30,10 +38,7 @@ binary_sensor:
       inverted: True
     name: Tlacitko
     id: tl_1
-    on_press:
-      - logger.log: "zmena stavu svetla"
-      - homeassistant.service:
-          service: 'light.toggle'
-          data:
-            entity_id: 'light.kitchen_lights'
+    on_press:  // po stisknuti tlacitka smenis stav rele
+      then:
+        - switch.toggle: relay_1  // zde pouzivas id rele (senzoru)
 
